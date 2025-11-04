@@ -13,6 +13,7 @@ class SwissTransportCard extends HTMLElement {
         show_destination: true,
         show_line: true,
         show_relative: true,
+        line_colors: {},
       },
       config
     );
@@ -91,19 +92,46 @@ class SwissTransportCard extends HTMLElement {
         const time = this._formatTime(timeIso);
         const rel = this.config.show_relative ? this._formatRelative(timeIso) : '';
         const platform = d.platform ? String(d.platform) : '';
-        const line = d.name || `${d.category || ''} ${d.number || ''}`.trim();
+        const rawName = d.name || '';
         const to = d.to || '';
 
-        // category badge color mapping
+        // determine a friendly line label: prefer explicit number, else pick a short token from name
+        let lineLabel = d.number || '';
+        if (!lineLabel && rawName) {
+          // split name into tokens and prefer short tokens (route numbers) over long vehicle ids
+          const tokens = rawName.toString().split(/\s+/).map((t) => t.replace(/[^A-Za-z0-9\-]/g, ''));
+          for (const t of tokens) {
+            if (!t) continue;
+            // skip long purely-numeric tokens that look like vehicle IDs (e.g., 023532)
+            if (/^\d+$/.test(t) && t.length > 3) continue;
+            // accept tokens that are short numbers (<=3), or contain letters (e.g., S31, 31A)
+            if (/^[0-9]{1,3}[A-Za-z\-]*$/.test(t) || /[A-Za-z]/.test(t)) {
+              lineLabel = t;
+              break;
+            }
+          }
+          // as a last resort, try to extract a short digit sequence
+          if (!lineLabel) {
+            const m = rawName.toString().match(/([0-9]{1,3}[A-Za-z\-]*)/);
+            lineLabel = m ? m[1] : '';
+          }
+        }
+        if (!lineLabel) {
+          // fallback to category+number or raw name
+          lineLabel = (d.number ? `${d.number}` : (d.category ? `${d.category}` : rawName)).trim();
+        }
+
+        // category badge color mapping (default)
         const cat = (d.category || '').toString().toUpperCase();
-        const colorMap = { IC: '#1e90ff', IR: '#1e90ff', RE: '#1e90ff', S: '#4caf50', R: '#4caf50', BUS: '#ff9800', TRAM: '#ff5722', T: '#9c27b0' };
-        const catColor = colorMap[cat] || '#607d8b';
+  const colorMap = { IC: '#1e90ff', IR: '#1e90ff', RE: '#1e90ff', S: '#4caf50', R: '#4caf50', B: '#ff9800', BUS: '#ff9800', TRAM: '#ff5722', T: '#9c27b0' };
+        const overrideColor = this.config.line_colors && this.config.line_colors[lineLabel];
+        const catColor = overrideColor || colorMap[cat] || '#607d8b';
 
         html += `<li class="departure">`;
         html += `<div class="cat" style="background:${catColor}" title="${this._escapeHtml(cat)}"></div>`;
         html += `<div class="time">${this._escapeHtml(rel || time)}</div>`;
         html += `<div class="info">`;
-        if (this.config.show_line) html += `<div class="line">${this._escapeHtml(line)}</div>`;
+        if (this.config.show_line) html += `<div class="line">${this._escapeHtml(lineLabel)}</div>`;
         if (this.config.show_destination) html += `<div class="to">→ ${this._escapeHtml(to)}</div>`;
         html += `</div>`;
         if (this.config.show_platform && platform) html += `<div class="platform">P ${this._escapeHtml(platform)}</div>`;
