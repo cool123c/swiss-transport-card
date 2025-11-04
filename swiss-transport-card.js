@@ -94,7 +94,13 @@ class SwissTransportCard extends HTMLElement {
         const line = d.name || `${d.category || ''} ${d.number || ''}`.trim();
         const to = d.to || '';
 
+        // category badge color mapping
+        const cat = (d.category || '').toString().toUpperCase();
+        const colorMap = { IC: '#1e90ff', IR: '#1e90ff', RE: '#1e90ff', S: '#4caf50', R: '#4caf50', BUS: '#ff9800', TRAM: '#ff5722', T: '#9c27b0' };
+        const catColor = colorMap[cat] || '#607d8b';
+
         html += `<li class="departure">`;
+        html += `<div class="cat" style="background:${catColor}" title="${this._escapeHtml(cat)}"></div>`;
         html += `<div class="time">${this._escapeHtml(rel || time)}</div>`;
         html += `<div class="info">`;
         if (this.config.show_line) html += `<div class="line">${this._escapeHtml(line)}</div>`;
