@@ -1,0 +1,7 @@
+{
+  "name": "Swiss Transport Card",
+  "content": "frontend",
+  "homepage": "https://github.com/cool123c/swiss-transport-card",
+  "documentation": "https://github.com/cool123c/swiss-transport-card/blob/main/README.md",
+  "versions": {"custom": "1.0.0"}
+}
